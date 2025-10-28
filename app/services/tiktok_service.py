@@ -1,7 +1,12 @@
 import requests
 
 def get_tiktok_video(link: str):
-    api_url = "https://www.tikwm.com/api/"
+    """
+    Gọi TikWM API qua proxy để Render không bị chặn IP.
+    Trả về thông tin video TikTok không watermark.
+    """
+    proxy_url = "https://api.codetabs.com/v1/proxy?quest="
+    api_url = f"https://www.tikwm.com/api/?url={link}"
 
     headers = {
         "User-Agent": (
@@ -16,14 +21,16 @@ def get_tiktok_video(link: str):
     }
 
     try:
-        response = requests.get(api_url, params={"url": link}, headers=headers, timeout=10)
+        response = requests.get(proxy_url + api_url, headers=headers, timeout=15)
+        response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Failed to connect to TikWM API: {e}")
+        raise Exception(f"Failed to connect to TikWM API (proxy): {e}")
 
-    if response.status_code != 200:
-        raise Exception(f"TikWM API returned status {response.status_code}")
+    try:
+        data = response.json()
+    except ValueError:
+        raise Exception("Invalid JSON response from TikWM API")
 
-    data = response.json()
     if not data.get("data"):
         raise Exception("Invalid response from TikWM API")
 
